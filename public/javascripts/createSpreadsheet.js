@@ -1,6 +1,6 @@
-import { GoogleSpreadsheet } from 'google-spreadsheet';
-import getWeatherData from './getWeatherData.js';
-import dotenv from 'dotenv';
+const { GoogleSpreadsheet } = require('google-spreadsheet');
+const getWeatherData = require('./getWeatherData');
+const dotenv = require('dotenv');
 
 dotenv.config();
 
@@ -64,4 +64,4 @@ async function loadWeatherData(sheet) {
 }
 
 
-export default createSpreadsheetByMonth;
+module.exports = createSpreadsheetByMonth;
