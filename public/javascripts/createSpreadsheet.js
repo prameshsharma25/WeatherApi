@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-async function createSpreadsheetDocument() {
+const createSpreadsheetDocument = async () => {
     const doc = new GoogleSpreadsheet(`${process.env.GOOGLE_SHEET_ID}`);
 
     await doc.useServiceAccountAuth({
@@ -15,46 +15,35 @@ async function createSpreadsheetDocument() {
     await doc.loadInfo();
     await doc.updateProperties({ title: 'Weather Forecast'});
 
-    createSpreadsheetByMonth(doc);
+    const sheet = await createSpreadsheetByMonth(doc);
+
+    return sheet;
 }
 
-async function createSpreadsheetByMonth(doc) {
-    const currentDocument = doc;
-    let spreadsheetCount = currentDocument.sheetCount;
+const createSpreadsheetByMonth = async (currentDocument) => {
+    const currentSpreadsheetTitle = getSpreadsheetTitle(currentDocument);
+    const currentMonth = getCurrentMonth();
+    let sheet;
 
-    if (spreadsheetCount < 1) {
-        const sheet = await currentDocument.addSheet({ headerValues: ['Date', 'Description', 'Temperature', 'Humidity', 'Wind']});
-    }
-    else if (spreadsheetCount > 1) {
-        while (spreadsheetCount > 1) {
-            const currentSheet = currentDocument.sheetsByIndex[spreadsheetCount-1];
-            await currentSheet.delete();
-            spreadsheetCount = currentDocument.spreadsheetCount;
-        }
+    if (currentSpreadsheetTitle != currentMonth) {
+        sheet = await currentDocument.addSheet({ headerValues: ['Date', 'Description', 'Temperature', 'Humidity', 'Wind']});
+        updateGoogleSheetTitle(sheet, currentMonth);
     }
     else {
-        /* Check if head row exists, than start adding weather data. */
-        const currentSheet = currentDocument.sheetsByIndex[0];
-        await currentSheet.updateProperties({ title: 'January' });
-        const rows = await currentSheet.getRows();
-
-        // await headRow.save();
-        
-        setInterval(async function() {
-            loadWeatherData(currentSheet);
-        }, 2000);
+        sheet = getCurrentSpreadsheet(currentDocument); 
     }
+
+    return sheet;
 }
 
-async function loadWeatherData(sheet) {
+const loadWeatherData = async (googleSheet) => {
     const weatherData = await getWeatherData().then(res => {
-        console.log(res);
         return res;
     });
 
     const {weather, main, wind} = weatherData;
 
-    const row = await sheet.addRow({
+    const row = await googleSheet.addRow({
         'Date': new Date().toJSON().slice(0,10).replace(/-/g,'/'),
         'Description': weather[0]['description'],
         'Temperature': main['temp'],
@@ -63,5 +52,31 @@ async function loadWeatherData(sheet) {
     });
 }
 
+const getCurrentSpreadsheet = (googleSheetDoc) => {
+    const currentSheet = googleSheetDoc.sheetsByIndex.at(-1);
 
-module.exports = createSpreadsheetByMonth;
+    return currentSheet;
+}
+
+const getSpreadsheetTitle = (googleSheetDoc) => {
+    const { title } = Object.values(googleSheetDoc.sheetsByTitle).at(-1);
+    
+    return title;
+}
+
+const getCurrentMonth = () => {
+    const listOfMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const currentDate = new Date();
+    const currentMonth = listOfMonths[currentDate.getMonth()];
+    
+    return currentMonth;
+}
+
+const updateGoogleSheetTitle = async (googleSheet, month) => {
+    await googleSheet.updateProperties({ title: month });
+}
+
+module.exports = {
+    createSpreadsheetDocument,
+    loadWeatherData
+}

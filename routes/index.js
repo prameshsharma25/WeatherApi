@@ -1,21 +1,24 @@
 const express = require('express');
-const createSpreadsheetByMonth = require('../public/javascripts/createSpreadsheet');
+const { createSpreadsheetDocument, loadWeatherData } = require('../public/javascripts/createSpreadsheet');
 
 const app = express();
 const router = express.Router();
 
-app.get('/', (req, res) => {
-    res.send('Hello Weather!');
+app.use(express.static('public'));
 
-    // createSpreadsheetByMonth();
+app.get('/', (req, res) => {
+  res.sendFile('index.html', { root: './views'});
+
+  setInterval(async () => {
+    const sheet = await createSpreadsheetDocument();
+    loadWeatherData(sheet);
+  }, 5000);
+
 });
 
 app.listen(process.env.PORT, () => {
     console.log(`Listening on PORT: ${process.env.PORT}`);
 });
 
-// router.get('/', function(req, res, next) {
-//   res.send('respond with a resource');
-// });
 
 module.exports = router;

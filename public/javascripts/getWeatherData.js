@@ -5,7 +5,7 @@ dotenv.config();
 
 let url = `https://api.openweathermap.org/data/2.5/weather?q=Yuba City,us&units=imperial&cnt=5&APPID=${process.env.API_KEY}`;
 
-async function getWeatherData() {
+const getWeatherData = async () => {
     const response = await fetch(url);
 
     if (!response.ok) {
